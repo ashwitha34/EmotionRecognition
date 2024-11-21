@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Recognition</title>
+</head>
+<body>
+    <h1>Emotion Recognition</h1>
+
+    <!-- Section for capturing an image -->
+    <div>
+        <h3>Capture Image</h3>
+        <video id="video" width="640" height="480" autoplay></video>
+        <button id="capture">Capture</button>
+        <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+    </div>
+
+    <!-- Display the captured image -->
+    <div>
+        <h3>Captured Image</h3>
+        <img id="captured-img" width="640" height="480" alt="Captured Image">
+    </div>
+
+    <script>
+        // Access the webcam
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('capture');
+        const capturedImg = document.getElementById('captured-img');
+        const context = canvas.getContext('2d');
+
+        // Request access to webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+            })
+            .catch((err) => {
+                console.error("Error accessing webcam: " + err);
+            });
+
+        // Capture image when the button is clicked
+        captureBtn.addEventListener('click', () => {
+            // Draw the current video frame to the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Get image data from the canvas and display it in the img tag
+            const imageData = canvas.toDataURL('image/png');
+            capturedImg.src = imageData;
+
+            // Send image to Flask backend for emotion detection
+            fetch('http://127.0.0.1:5000/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: imageData  // The base64 image data from the canvas
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Emotion:', data.emotion);
+                // Display the predicted emotion on the page (optional)
+                alert('Detected Emotion: ' + data.emotion);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
